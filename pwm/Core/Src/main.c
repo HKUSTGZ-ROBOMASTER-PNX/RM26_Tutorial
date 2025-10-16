@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usart.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -91,22 +91,30 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART1_UART_Init();
+  MX_TIM1_Init();
+  MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t ReceivedData[2];
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_2);
+  __HAL_TIM_SET_COMPARE(&htim12, TIM_CHANNEL_2, 10);
+  int compareValue = 500;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      //以下取消注释以实现串口发送
-      // HAL_UART_Transmit(&huart1, "Hello world!\n", 13, 100);
-      // HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      // HAL_Delay(1000);
-      //以下取消注释以实现串口收发的阻塞模式
-      HAL_UART_Receive(&huart1, (uint8_t *)&ReceivedData, 2, HAL_MAX_DELAY);
-      HAL_UART_Transmit(&huart1, (uint8_t *)&ReceivedData, 2, 100);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, compareValue);//宏，设置定时器的捕获/比较寄存器的值：用于定时器的PWM（脉冲宽度调制）输出
+    HAL_Delay(1000);
+    if(compareValue == 500){
+      compareValue = 1000;
+    }
+    else if (compareValue == 1000){
+      compareValue = 1500;
+    }
+    else if (compareValue == 1500){
+      compareValue = 500;
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
