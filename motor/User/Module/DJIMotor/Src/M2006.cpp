@@ -104,9 +104,3 @@ M2006::MotorStateTypedef M2006::AliveCheck()
     }
     return MotorState;
 }
-
-//TODO:堵转检测
-void M2006::BlockedCheck()
-{
-
-}

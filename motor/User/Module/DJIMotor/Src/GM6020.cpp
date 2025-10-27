@@ -105,8 +105,3 @@ GM6020::MotorStateTypedef GM6020::AliveCheck()
     }
     return MotorState;
 }
-
-//TODO:堵转检测
-void GM6020::BlockedCheck()
-{
-}

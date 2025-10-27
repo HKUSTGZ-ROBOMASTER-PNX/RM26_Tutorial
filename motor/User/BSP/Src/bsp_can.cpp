@@ -1,12 +1,6 @@
 #include "bsp_can.hpp"
 
-// #include "GMMotorhandler.hpp"
-// #include "LKMotorhandler.hpp"
-// #include "BoardConnectivity.hpp"
-
 extern FDCAN_HandleTypeDef hfdcan1;
-extern FDCAN_HandleTypeDef hfdcan2;
-extern FDCAN_HandleTypeDef hfdcan3;
 
 /**
  * @brief 初始化CAN滤波器配置。
@@ -28,16 +22,6 @@ void CAN_Init(void)
     HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
     HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
     HAL_FDCAN_Start(&hfdcan1);
-
-    HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_FilterConfig);
-    HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
-    HAL_FDCAN_ActivateNotification(&hfdcan2, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
-    HAL_FDCAN_Start(&hfdcan2);
-
-    HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_FilterConfig);
-    HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
-    HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
-    HAL_FDCAN_Start(&hfdcan3);
 }
 
 void CAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16_t len)
@@ -59,14 +43,26 @@ void CAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16
 }
 
 /**
- * @todo 待完成整个函数
- * @brief 更新从CAN接收的电机数据。
- * @param index 电机的索引，用于识别特定的电机。
- * @param rx_header 指向接收到的数据的指针。
- * @param can_receive_data 指向电机测量数据结构的指针，用于存储更新的数据。
+ * @brief CAN接收中断回调函数，所有反馈在can上的数据会在这里根据ID进行分类并处理。
+ * @param hfdcan CAN句柄
+ * @note 该函数用于处理CAN接收中断，根据ID分类处理接收到的数据。但是这中方法可能会在回调里浪费时间，因为这里的处理是阻塞的。考虑是否需要将数据存储到一个缓冲区，然后在主循环中处理。
  */
-void CAN_Receive()
+
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
+
+    FDCAN_RxHeaderTypeDef rx_header;
+    uint8_t rx_data[8];
+    HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header, rx_data);
+    /*-------------------------------------------------大疆电机数据-------------------------------------------------*/
+    if (rx_header.Identifier >= 0x201 && rx_header.Identifier <= 0x208)
+    {
+        if (hfdcan == &hfdcan1)
+        {
+            //@todo: 实现你的逻辑
+        }
+    }
 }
 
 

@@ -105,8 +105,3 @@ M3508::MotorStateTypedef M3508::AliveCheck()
     }
     return MotorState;
 }
-
-//TODO:堵转检测
-void M3508::BlockedCheck()
-{
-}

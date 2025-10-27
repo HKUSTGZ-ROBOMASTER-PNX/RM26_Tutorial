@@ -20,8 +20,6 @@ static uint64_t CYCCNT64; ///< DWT CYCCNT寄存器64位值
  * @brief 私有函数,用于检查DWT CYCCNT寄存器是否溢出,并更新CYCCNT_RountCount
  * @attention 此函数假设两次调用之间的时间间隔不超过一次溢出
  *
- * @todo 更好的方案是为dwt的时间更新单独设置一个任务?
- *       不过,使用dwt的初衷是定时不被中断/任务等因素影响,因此该实现仍然有其存在的意义
  *
  */
 static void DWT_CNT_Update(void)
