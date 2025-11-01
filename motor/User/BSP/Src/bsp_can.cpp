@@ -1,4 +1,5 @@
 #include "bsp_can.hpp"
+#include "DJIMotorHandler.hpp"
 
 extern FDCAN_HandleTypeDef hfdcan1;
 
@@ -61,6 +62,13 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         if (hfdcan == &hfdcan1)
         {
             //@todo: 实现你的逻辑
+            if (rx_header.Identifier >= 0x201 && rx_header.Identifier <= 0x208)
+            {
+                if (hfdcan == &hfdcan1)
+                {
+                    DJIMotorHandler::Instance()->updateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x201));
+                }
+            }
         }
     }
 }

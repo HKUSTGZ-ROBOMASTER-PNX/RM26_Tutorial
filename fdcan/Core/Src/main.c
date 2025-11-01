@@ -44,7 +44,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t send_current_data[8] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,6 +57,23 @@ static void MPU_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void CAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16_t len) {
+  FDCAN_TxHeaderTypeDef tx_header; ///< 定义发送数据结构体
+
+  tx_header.IdType = FDCAN_STANDARD_ID;
+  tx_header.TxFrameType = FDCAN_DATA_FRAME;
+  tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+  tx_header.BitRateSwitch = FDCAN_BRS_OFF;
+  tx_header.FDFormat = FDCAN_CLASSIC_CAN;
+  tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+  tx_header.MessageMarker = 0;
+
+  tx_header.Identifier = Id;
+  tx_header.DataLength = len;
+
+  HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &tx_header, msg); ///< 发送数据
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -108,15 +125,16 @@ int main(void)
   HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
   HAL_FDCAN_Start(&hfdcan1);
 
-  FDCAN_TxHeaderTypeDef tx_header; ///< 定义发送数据结构体
 
-  tx_header.IdType = FDCAN_STANDARD_ID;
-  tx_header.TxFrameType = FDCAN_DATA_FRAME;
-  tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-  tx_header.BitRateSwitch = FDCAN_BRS_OFF;
-  tx_header.FDFormat = FDCAN_CLASSIC_CAN;
-  tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-  tx_header.MessageMarker = 0;
+  //发送的电流包，一个包能发送4个电机的电流值，每个电机电流值的类型为int16_t,通过移位操作拆成两个uint8_t传输
+  int16_t motor_current = 2000;
+
+  //进行数据填充与移位，其中后三个电机电流给0
+  send_current_data[0] = motor_current >> 8;
+  send_current_data[1] = motor_current;
+  for (int i = 2; i <= 6; i++) {
+    send_current_data[i] = 0;
+  }
 
   /* USER CODE END 2 */
 
@@ -124,9 +142,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+    CAN_Transmit(&hfdcan1, 0x1FF, send_current_data, 8);
+    HAL_Delay(1);
+
     /* USER CODE END WHILE */
-    tx_header.Identifier = 0x205;
-    tx_header.DataLength = 8;
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
