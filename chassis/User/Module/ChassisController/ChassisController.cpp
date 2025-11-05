@@ -89,6 +89,8 @@ void ChassisController::HandleInput()
      *    Vy =
      *    Vw =
      *    you have to determine your state according to remote control switch state
+     *    left switch down -> relax state: all motor speed should be 0
+     *    left switch mid -> normal state
      */
 
     if (isnan(Vx) || isnan(Vy) || isnan(Vw)) // 如果出现nan错误，将速度设定值设为0
