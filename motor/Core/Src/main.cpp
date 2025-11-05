@@ -26,6 +26,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "bsp.hpp"
+#include "bsp_dwt.hpp"
+#include "DJIMotorHandler.hpp"
+#include "GM6020.hpp"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,6 +63,95 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+//创建motorhandler实例，使这个项目中始终只有一个motorhandler，不另外多次创建实例
+DJIMotorHandler *motor_handler = DJIMotorHandler::Instance();
+//创建一个电机6020
+GM6020 motor6020;
+
+//下面是两个电机跟踪目标曲线
+static double signal(double t)
+{
+  constexpr double T = 0.6;           // 周期
+
+  constexpr double buffer_ratio = 1.0 / 5.0;
+  constexpr double rise_ratio = 4.0 / 5.0;
+
+  const double t_mod = std::fmod(t, T);
+
+  constexpr double buffer_time = buffer_ratio * T;
+  constexpr double rise_time = rise_ratio * T;
+
+  if (t_mod < buffer_time)
+  {
+    // 前1/5缓冲段
+    return 0.0;
+  }
+  else if (t_mod < T)
+  {
+    double step_value = 0.1f;
+
+    const double rise_t = t_mod - buffer_time;
+    const double progress = rise_t / rise_time; // 0 ~ 1
+
+    const double smooth = (1 - std::cos(Math::Pi * progress)) / 2.0;
+
+    return step_value * smooth;
+  }
+  else
+  {
+    return 0.0;
+  }
+}
+
+static double tri_signal(double t)
+{
+  constexpr double T = 0.6;           // 周期
+
+  constexpr double buffer_ratio = 1.0 / 5.0;
+  constexpr double rise_ratio = 4.0 / 5.0;
+
+  const double t_mod = std::fmod(t, T);
+
+  constexpr double buffer_time = buffer_ratio * T;
+  constexpr double rise_time = rise_ratio * T;
+
+  if (t_mod < buffer_time)
+  {
+    // 前1/5缓冲段
+    return 0.0;
+  }
+  else if (t_mod < T)
+  {
+    double step_value = 0.1f;
+    // 后4/5 线性上升段（三角波）
+    const double rise_t = t_mod - buffer_time;
+    const double progress = rise_t / rise_time; // 0 ~ 1
+
+    // 线性
+    const double smooth = progress;
+
+    return step_value * smooth;
+  }
+  else
+  {
+    return 0.0;
+  }
+}
+
+static double sin_signal(double t)
+{
+  const double amplitude = 0.03;  // 振幅（小幅度）
+  double T = 0.2f;          // 周期（快速振动）
+  const double omega = 2.0 * M_PI / T; // 角频率 ω = 2π / T
+
+  return amplitude * std::sin(omega * t);
+}
+
+float dbg_signal = 0.0f;
+float dbg_pos_fdb = 0.0f;
+float dbg_spd_fdb = 0.0f;
+float dbg_pos_ref = 0.0f;
+float dbg_spd_ref = 0.0f;
 
 /* USER CODE END 0 */
 
@@ -98,12 +192,48 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  //在系统init后，首先初始化can，完成过滤等等配置
+  bsp_Init();
+  //然后把电机注册到motorhandler里
+  motor_handler->registerMotor(&motor6020, &hfdcan1, 0x205);
+  //motor mode: position
+  motor6020.controlMode = DJIMotor::POS_MODE;
+  //for safety
+  motor6020.currentSet = 0;
+
+  //set and modify PID paras here
+  motor6020.positionPid.kp = 30.0f;
+  motor6020.positionPid.ki = 0.0f;
+  motor6020.positionPid.kd = 0.0f;
+  motor6020.speedPid.kp = 400.0f;
+  motor6020.speedPid.ki = 0.0f;
+  motor6020.speedPid.kd = 0.0f;
+
+  //init original position to current position
+  static float offset = motor6020.motorFeedback.positionFdb;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    motor6020.positionPid.ref = signal(DWT_GetTimeline_s())+offset;
+    motor6020.positionPid.fdb = motor6020.motorFeedback.positionFdb;
+    motor6020.positionPid.UpdateResult();
+    motor6020.speedPid.ref = motor6020.positionPid.result;
+    motor6020.speedPid.fdb = motor6020.motorFeedback.speedFdb;
+    motor6020.speedPid.UpdateResult();
+    motor6020.currentSet = motor6020.speedPid.result;
+
+    dbg_signal = motor6020.positionPid.ref;
+    dbg_pos_fdb = motor6020.positionPid.fdb;
+    dbg_spd_fdb = motor6020.speedPid.fdb;
+    dbg_pos_ref = motor6020.positionPid.ref;
+    dbg_spd_ref = motor6020.speedPid.ref;
+
+    motor_handler->sendControlData();
+
+    HAL_Delay(1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

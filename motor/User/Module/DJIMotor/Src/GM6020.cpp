@@ -105,3 +105,6 @@ GM6020::MotorStateTypedef GM6020::AliveCheck()
     }
     return MotorState;
 }
+
+
+void GM6020::BlockedCheck(){}
