@@ -66,6 +66,7 @@ void ChassisController::Init()
     L_Rear.currentSet = 0;
 
     /*---------------------------挂载电机---------------------------*/
+    // @TODO: Please ensure the motor IDs are consistent with chassis model
     DJIMotorHandler::Instance()->registerMotor(&L_Rear, &hcan1, 0x202);
     DJIMotorHandler::Instance()->registerMotor(&L_Front, &hcan1, 0x201);
     DJIMotorHandler::Instance()->registerMotor(&R_Front, &hcan1, 0x204);
@@ -112,6 +113,7 @@ void ChassisController::Kinematic_Inverse_Resolution(M3508 *motors[])
          * @TODO: implement your IK solution here, the core part contains a single line
          *   tmp_Speed =
          *   motors[i]->speedSet =
+         *   Please ensure that your controller works and your control signals are sent
          */
     }
 }
