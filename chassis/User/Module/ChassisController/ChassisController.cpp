@@ -66,6 +66,7 @@ void ChassisController::Init()
     L_Rear.currentSet = 0;
 
     /*---------------------------挂载电机---------------------------*/
+    // @TODO: Please ensure the motor IDs are consistent with chassis model
     DJIMotorHandler::Instance()->registerMotor(&L_Rear, &hcan1, 0x202);
     DJIMotorHandler::Instance()->registerMotor(&L_Front, &hcan1, 0x201);
     DJIMotorHandler::Instance()->registerMotor(&R_Front, &hcan1, 0x204);
@@ -88,6 +89,8 @@ void ChassisController::HandleInput()
      *    Vy =
      *    Vw =
      *    you have to determine your state according to remote control switch state
+     *    left switch down -> relax state: all motor speed should be 0
+     *    left switch mid -> normal state
      */
 
     if (isnan(Vx) || isnan(Vy) || isnan(Vw)) // 如果出现nan错误，将速度设定值设为0
@@ -112,6 +115,7 @@ void ChassisController::Kinematic_Inverse_Resolution(M3508 *motors[])
          * @TODO: implement your IK solution here, the core part contains a single line
          *   tmp_Speed =
          *   motors[i]->speedSet =
+         *   Please ensure that your controller works and your control signals are sent
          */
     }
 }
