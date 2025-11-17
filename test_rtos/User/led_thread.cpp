@@ -17,7 +17,7 @@ uint8_t my_thread_stack[1024];
     /* Enter into a forever loop. */
     while(1)
     {
-        //LED_blink();//just an example, implement it yourself
+        LED_blink();//just an example, implement it yourself
         /* Sleep for 1 tick. */
         tx_thread_sleep(1000);
 
