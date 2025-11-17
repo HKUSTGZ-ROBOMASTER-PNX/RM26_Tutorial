@@ -21,8 +21,7 @@ uint8_t GimbalThreadStack[4096] = {0};
 
 extern TX_SEMAPHORE IMUThreadSem;
 
-#define GimbalTest
-#ifdef GimbalTest
+
 
 
 double yaw_signal_step = 0.82f;

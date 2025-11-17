@@ -18,14 +18,17 @@
 class ServiceMotors
 {
 public:
+    // LK9025 RMotor;
+    // LK9025 LMotor;
 
+    // LK8016 RD;
+    // LK8016 RU;
 
-    M3508 LFWheel;
-    M3508 LRWheel;
-    M3508 RFWheel;
-    M3508 RRWheel;
+    // LK8016 LD;
+    // LK8016 LU;
 
-
+    GM6020 YawMotor;
+    GM6020 PitchMotor;
 
     void MotorRegister();
     void AllMotorSetOutput();

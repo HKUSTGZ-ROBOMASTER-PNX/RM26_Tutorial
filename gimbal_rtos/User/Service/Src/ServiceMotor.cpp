@@ -28,54 +28,26 @@ float vel_ratio = 0;
 float test_r = 0;
 float debug_set = 0.0f;
 
-ServiceMotors *serviceMotors = ServiceMotors::Instance();
-
-
 void ServiceMotors::MotorRegister() {
     // //注册电机
-    DJIMotorhandler->registerMotor(&LFWheel, &hcan1, 0x201);
-    LFWheel.controlMode = DJIMotor::SPD_MODE;
-    LFWheel.gearBox = GearBox_M3508;
-    LFWheel.currentSet = 0;
-    DJIMotorhandler->registerMotor(&LRWheel, &hcan1, 0x202);
-    LRWheel.controlMode = DJIMotor::SPD_MODE;
-    LRWheel.gearBox = GearBox_M3508;
-    LRWheel.currentSet = 0;
-    DJIMotorhandler->registerMotor(&RRWheel, &hcan1, 0x203);
-    RRWheel.controlMode = DJIMotor::SPD_MODE;
-    RRWheel.gearBox = GearBox_M3508;
-    RRWheel.currentSet = 0;
-    DJIMotorhandler->registerMotor(&RFWheel, &hcan1, 0x204);
-    RFWheel.controlMode = DJIMotor::SPD_MODE;
-    RFWheel.gearBox = GearBox_M3508;
-    RFWheel.currentSet = 0;
+    DJIMotorhandler->registerMotor(&YawMotor, &hcan1, 0x206);
+    YawMotor.currentSet = 0;
+    YawMotor.gearBox = GearBox_None;
 
+    DJIMotorhandler->registerMotor(&PitchMotor, &hcan1, 0x205);
+    PitchMotor.currentSet = 0;
+    PitchMotor.gearBox = GearBox_None;
+    PitchMotor.P_MIN = -1.66360223f;
+    PitchMotor.P_MAX = -1.0262332f;
 }
 
 void ServiceMotors::SetModeAndPidParam()
 {
-    LFWheel.speedPid.kp = 800.0f;
-    LFWheel.speedPid.ki = 0.0f;
-    LFWheel.speedPid.kd = 1.0f;
+    YawMotor.speedPid.kp = 300.0f;
+    YawMotor.speedPid.ki = 0.01f;
+    YawMotor.speedPid.kd = 1.0f;
 
-    LRWheel.speedPid.kp = 800.0f;
-    LRWheel.speedPid.ki = 0.0f;
-    LRWheel.speedPid.kd = 1.0f;
-
-    RRWheel.speedPid.kp = 800.0f;
-    RRWheel.speedPid.ki = 0.0f;
-    RRWheel.speedPid.kd = 1.0f;
-
-    RFWheel.speedPid.kp = 800.0f;
-    RFWheel.speedPid.ki = 0.0f;
-    RFWheel.speedPid.kd = 1.0f;
-}
-
-void ServiceMotors::AllMotorSetOutput() {
-    LFWheel.setOutput();
-    LRWheel.setOutput();
-    RRWheel.setOutput();
-    RFWheel.setOutput();
+    PitchMotor.speedPid.kp = 100.0f;
 }
 
 [[noreturn]] void MotorThreadFun(ULONG initial_input) {
@@ -85,9 +57,8 @@ void ServiceMotors::AllMotorSetOutput() {
     //注册电机
     ServiceMotors::Instance()->MotorRegister();
 
-    om_suber_t *chassis_suber = om_subscribe(om_find_topic("chassisctrl", UINT32_MAX));
-    msg_chassis_ctrl_t chassis_ctrl{};
-
+    om_suber_t *gimbal_suber = om_subscribe(om_find_topic("gimbalctrl", UINT32_MAX));
+    msg_gimbal_ctrl_t gimbal_ctrl{};
     ServiceMotors::Instance()->SetModeAndPidParam();
 
     motor_pos_pid.kp = 10.0f;
@@ -100,11 +71,32 @@ void ServiceMotors::AllMotorSetOutput() {
     float yaw_init = 0.0f;
 
     for (;;) {
-        om_suber_export(chassis_suber, &chassis_ctrl, false);
+        om_suber_export(gimbal_suber, &gimbal_ctrl, false);
+        if (gimbal_ctrl.pitch_mode == SPD)
+        {
+            ServiceMotors::Instance()->PitchMotor.currentSet = static_cast<int16_t>(-gimbal_ctrl.pitch_speed*1000-5000);
+            if (ServiceMotors::Instance()->PitchMotor.motorFeedback.positionFdb < ServiceMotors::Instance()->PitchMotor.P_MIN
+                || ServiceMotors::Instance()->PitchMotor.motorFeedback.positionFdb > ServiceMotors::Instance()->PitchMotor.P_MAX)
+                ServiceMotors::Instance()->PitchMotor.currentSet = static_cast<int16_t>(-5000);
+        }
+        else
+        {
+            ServiceMotors::Instance()->PitchMotor.currentSet = static_cast<int16_t>(gimbal_ctrl.pitch_torque*50-5000);
+        }
+        if (gimbal_ctrl.yaw_mode == SPD)
+        {
+            ServiceMotors::Instance()->YawMotor.currentSet = static_cast<int16_t>(-gimbal_ctrl.yaw_speed*1000);
+        }
+        else
+        {
+            ServiceMotors::Instance()->YawMotor.currentSet = static_cast<int16_t>(gimbal_ctrl.yaw_torque*50);
+        }
 
-        // for (int i = 0; i < 4; i++) {
-        //     serviceMotors->WheelMotors[i]->currentSet = chassis_ctrl.wheel_cur[i];
-        // }
+        // motor_debug.pos_set = ServiceMotors::Instance()->PitchMotor.motorFeedback.positionFdb;
+        motor_debug.pos_fdb = ServiceMotors::Instance()->PitchMotor.motorFeedback.positionFdb;
+        motor_debug.cur_set = ServiceMotors::Instance()->PitchMotor.currentSet;
+        motor_debug.cur_fdb = ServiceMotors::Instance()->PitchMotor.motorFeedback.currentFdb;
+
         //发送控制指令给电机
         DJIMotorhandler->sendControlData();
 
