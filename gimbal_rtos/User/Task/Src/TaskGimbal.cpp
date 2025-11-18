@@ -146,12 +146,13 @@ static double sin_signal(double t)
             //@TODO: if remoter is offline or in relax state, set all motors' currentSet to 0, protection
 
             //@TODO: otherwise, use remote controller to control pitch and yaw
-            //@warning!!!!!!!!!!!!!!!: remember to check is position in degree or in radius, in ref and fdb.  VERY DANGEROUS!!!!!!!!!!!!!
+            //@TODO: remember to add constraint for pitchset, not exceeding upper/lower limit (see serviceMotor in registration)
+            //@TODO: warning!!!!!!!!!!!!!!!: remember to check is position in degree or in radius, in ref and fdb.  VERY DANGEROUS!!!!!!!!!!!!!
 
 
             //@TODO:publish the calculated result to topic, and receive and set by ServiceMotor, Or directly use instance to transmit.
 
-            //@TODO: remember to ?
         }
+        //@TODO: remember to ?
     }
 }
