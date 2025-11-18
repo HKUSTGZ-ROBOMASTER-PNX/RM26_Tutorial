@@ -30,11 +30,11 @@ float debug_set = 0.0f;
 
 void ServiceMotors::MotorRegister() {
     // //注册电机
-    DJIMotorhandler->registerMotor(&YawMotor, &hcan1, 0x206);
+    DJIMotorhandler->registerMotor(&YawMotor, &hcan1, 0x205);
     YawMotor.currentSet = 0;
     YawMotor.gearBox = GearBox_None;
 
-    DJIMotorhandler->registerMotor(&PitchMotor, &hcan1, 0x205);
+    DJIMotorhandler->registerMotor(&PitchMotor, &hcan1, 0x206);
     PitchMotor.currentSet = 0;
     PitchMotor.gearBox = GearBox_None;
     PitchMotor.P_MIN = -1.66360223f;
